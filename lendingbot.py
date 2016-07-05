@@ -181,16 +181,16 @@ if config_needed:
 		pass
 sleepTime = sleepTimeActive #Start with active mode
 #sanity checks
-if sleepTime < 1 or sleepTime > 3600 or sleepTimeInactive < 1 or sleepTimeInactive > 3600:
-	print "sleeptime values must be 1-3600"
+if sleepTime <= 1 or sleepTime >= 3600 or sleepTimeInactive <= 1 or sleepTimeInactive >= 3600:
+	print "sleeptime values must be 1-3600 seconds"
 	exit(1)
-if minDailyRate < 0.00003 or minDailyRate > 0.05: # 0.003% daily is 1% yearly
+if minDailyRate <= 0.003 or minDailyRate >= 5: # 0.003% daily is 1% yearly
 	print "mindaily rate is set too low or too high, must be 0.003-5%"
 	exit(1)
-if maxDailyRate < 0.00003 or maxDailyRate > 0.05:
+if maxDailyRate <= 0.003 or maxDailyRate >= 5:
 	print "maxdaily rate is set too low or too high, must be 0.003-5%"
 	exit(1)
-if spreadLend < 1 or spreadLend > 20:
+if spreadLend = 1 or spreadLend >= 20:
 	print "spreadlend value must be 1-20 range"
 	exit(1)
 
