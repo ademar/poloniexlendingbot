@@ -185,9 +185,12 @@ function Timespan(name, multiplier) {
     };
 }
 
-$(document).ready(function () {
-    loadData();
-    if(window.location.protocol == "file:") {
-        $('#file').show();
-    }
-});
+(function(){
+    $(document).ready(function () {
+        loadData();
+        if(window.location.protocol == "file:") {
+            $('#file').show();
+        }
+    });
+    setTimeout(arguments.callee, 60000);
+})();
