@@ -283,8 +283,11 @@ def cancelAndLoanAll():
 		for offer in loanOffers[cur]:
 			onOrderBalances[cur] = onOrderBalances.get(cur, 0) + Decimal(offer['amount'])
 			if dryRun == False:
-				msg = bot.cancelLoanOffer(cur,offer['id'])
-				log.cancelOrders(cur, msg)
+				try:
+					msg = bot.cancelLoanOffer(cur,offer['id'])
+					log.cancelOrders(cur, msg)
+				except Exception as e:
+					log.log("Error canceling loan offer: " + str(e))
 
 	lendingBalances = bot.returnAvailableAccountBalances("lending")['lending']
 	if dryRun == True: #just fake some numbers, if dryrun (testing)
@@ -318,11 +321,15 @@ def cancelAndLoanAll():
 		loans = bot.returnLoanOrders(activeCur, loanOrdersRequestLimit[activeCur] )
 		loansLength = len(loans['offers'])
 
+		minSize = Decimal(0.5)
+		dynamicSpreadLend = min(int(Decimal(activeBal) / minSize), spreadLend)
+		dynamicSpreadLend = max(dynamicSpreadLend, 1)
+
 		s = Decimal(0) #sum
 		i = int(0) #offer book iterator
 		j = int(0) #spread step count
 		lent = Decimal(0)
-		step = (gapTop - gapBottom)/spreadLend
+		step = (gapTop - gapBottom)/dynamicSpreadLend
 		#TODO check for minimum lendable amount, and try to decrease the spread. e.g. at the moment balances lower than 0.001 won't be lent
 		#in case of empty lendbook, lend at max
 		activePlusLended = Decimal(activeBal)
@@ -338,15 +345,15 @@ def cancelAndLoanAll():
 			while True:
 				if s2 > activePlusLended*(gapBottom/100+(step/100*j)) and Decimal(offer['rate']) > curMinDailyRate:
 					j += 1
-					s2 = s2 + Decimal(activeBal)/spreadLend
+					s2 = s2 + Decimal(activeBal)/dynamicSpreadLend
 				else:
 					createLoanOffer(activeCur,s2-s,offer['rate'])
 					lent = lent + (s2-s).quantize(SATOSHI)
 					break
-				if j == spreadLend:
+				if j == dynamicSpreadLend:
 					createLoanOffer(activeCur,Decimal(activeBal)-lent,offer['rate'])
 					break
-			if j == spreadLend:
+			if j == dynamicSpreadLend:
 				break
 			i += 1
 			if (i == loansLength): #end of the offers
@@ -357,8 +364,7 @@ def cancelAndLoanAll():
 					# increase limit for currency to get a more accurate response
 					loanOrdersRequestLimit[activeCur] += defaultLoanOrdersRequestLimit
 					log.log( activeCur + ': Not enough offers in response, adjusting request limit to ' + str(loanOrdersRequestLimit[activeCur]))
-					# repeat currency
-					activeCurIndex -= 1
+					return
 	if usableCurrencies == 0: #After loop, if no currencies had enough to lend, use inactive sleep time.
 		sleepTime = sleepTimeInactive
 	else: #Else, use active sleep time.
